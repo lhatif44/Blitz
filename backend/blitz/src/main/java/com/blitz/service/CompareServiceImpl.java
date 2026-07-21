@@ -25,12 +25,13 @@ public class CompareServiceImpl implements CompareService {
     }
 
     @Override
-    //Function to validate that two players (looked up by UUID) are in the same position group
+    //Function to validate that two players are in the same position group to compare
     //Fetches both players from the database, then delegates to the private helper for the actual check
     //Throws a RuntimeException if either player is not found or if their position groups don't match
     public void validateSamePositionGroup(UUID playerId1, UUID playerId2) {
-        Player player1 = playerRepository.findById(playerId1)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId1));
+        
+	Player player1 = playerRepository.findById(playerId1)
+           	.orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId1));
         Player player2 = playerRepository.findById(playerId2)
                 .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId2));
         //Delegate to the overloaded helper that accepts Player objects directly
@@ -81,7 +82,7 @@ public class CompareServiceImpl implements CompareService {
                 player1Stats = statsService.getReceivingStats(playerId1, seasonType);
                 player2Stats = statsService.getReceivingStats(playerId2, seasonType);
             }
-            case "DE", "DT", "EDGE" -> {
+case "DE", "DT", "EDGE" -> {
                 player1Stats = statsService.getPassRushStats(playerId1, seasonType);
                 player2Stats = statsService.getPassRushStats(playerId2, seasonType);
             }

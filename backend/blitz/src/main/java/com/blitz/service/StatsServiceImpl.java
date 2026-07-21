@@ -33,14 +33,23 @@ public class StatsServiceImpl implements StatsService {
             SecondaryStatsRepository secondaryStatsRepository,
             KickingStatsRepository kickingStatsRepository,
             PuntingStatsRepository puntingStatsRepository) {
-        this.passingStatsRepository = passingStatsRepository;
-        this.rushingStatsRepository = rushingStatsRepository;
-        this.receivingStatsRepository = receivingStatsRepository;
-        this.passRushStatsRepository = passRushStatsRepository;
-        this.linebackerStatsRepository = linebackerStatsRepository;
-        this.secondaryStatsRepository = secondaryStatsRepository;
-        this.kickingStatsRepository = kickingStatsRepository;
-        this.puntingStatsRepository = puntingStatsRepository;
+        
+	    
+	this.passingStatsRepository = passingStatsRepository;
+        
+	this.rushingStatsRepository = rushingStatsRepository;
+        
+	this.receivingStatsRepository = receivingStatsRepository;
+        
+	this.passRushStatsRepository = passRushStatsRepository;
+        
+	this.linebackerStatsRepository = linebackerStatsRepository;
+        
+	this.secondaryStatsRepository = secondaryStatsRepository;
+        
+	this.kickingStatsRepository = kickingStatsRepository;
+        
+	this.puntingStatsRepository = puntingStatsRepository;
     }
 
     @Override
@@ -48,7 +57,8 @@ public class StatsServiceImpl implements StatsService {
     //If seasonType is provided (e.g. "REG" or "POST"), only rows matching that type are returned
     //If seasonType is null or blank, all rows across every season are returned
     public List<PassingStats> getPassingStats(UUID playerId, String seasonType) {
-        if (seasonType != null && !seasonType.isBlank()) {
+        
+	if (seasonType != null && !seasonType.isBlank()) {
             return passingStatsRepository.findByPlayerIdAndSeasonType(playerId, seasonType);
         }
         return passingStatsRepository.findByPlayerId(playerId);

@@ -38,7 +38,6 @@ public class Player {
       private String positionGroup;
 
       @Column(name = "birth_date")
-      // LocalDate maps to SQL DATE type
       private LocalDate birthDate;
 
       @Column(name = "birth_city")
