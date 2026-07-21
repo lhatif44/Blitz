@@ -4,7 +4,7 @@ import com.blitz.model.entity.*;
 import com.blitz.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.blitz.exception.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -62,7 +62,7 @@ public class CareerStatsServiceImpl implements CareerStatsService {
     //Recomputes the whole position group because minimum thresholds depend on all players' data
     public void computeCareerStatsForPlayer(UUID playerId) {
         Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
         computeCareerStatsForPositionGroup(player.getPositionGroup());
     }
 

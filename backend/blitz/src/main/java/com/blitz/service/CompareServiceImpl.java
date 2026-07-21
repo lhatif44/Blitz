@@ -4,7 +4,8 @@ import com.blitz.model.entity.Player;
 import com.blitz.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.blitz.exception.ResourceNotFoundException;
+import com.blitz.exception.InvalidComparisonException;
 import java.util.UUID;
 
 @Service
@@ -30,20 +31,19 @@ public class CompareServiceImpl implements CompareService {
     //Throws a RuntimeException if either player is not found or if their position groups don't match
     public void validateSamePositionGroup(UUID playerId1, UUID playerId2) {
         
-	Player player1 = playerRepository.findById(playerId1)
-           	.orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId1));
+	    Player player1 = playerRepository.findById(playerId1)
+           	    .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId1));
         Player player2 = playerRepository.findById(playerId2)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId2));
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId2));
         //Delegate to the overloaded helper that accepts Player objects directly
         validateSamePositionGroup(player1, player2);
     }
 
     //Private helper that performs the actual position group equality check
-    //Accepts already-fetched Player objects to avoid making redundant database calls
     //Called internally by comparePlayers so players are only fetched once
     private void validateSamePositionGroup(Player player1, Player player2) {
         if (!player1.getPositionGroup().equals(player2.getPositionGroup())) {
-            throw new RuntimeException("Cannot compare players from different position groups: "
+            throw new InvalidComparisonException("Cannot compare players from different position groups: "
                     + player1.getPositionGroup() + " vs " + player2.getPositionGroup());
         }
     }
@@ -55,9 +55,9 @@ public class CompareServiceImpl implements CompareService {
     public CompareService.ComparisonResult comparePlayers(UUID playerId1, UUID playerId2, String seasonType) {
         //Fetch both players once — reused for the position group check and the result object
         Player player1 = playerRepository.findById(playerId1)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId1));
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId1));
         Player player2 = playerRepository.findById(playerId2)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId2));
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId2));
 
         //Throws if the two players are not in the same position group
         validateSamePositionGroup(player1, player2);
@@ -65,7 +65,6 @@ public class CompareServiceImpl implements CompareService {
         String positionGroup = player1.getPositionGroup();
 
         //Each position group maps to a different stats table
-        //WR and TE share receiving stats; DE, DT, EDGE share pass rush stats; CB and S share secondary stats
         Object player1Stats;
         Object player2Stats;
 
@@ -103,7 +102,7 @@ case "DE", "DT", "EDGE" -> {
                 player2Stats = statsService.getPuntingStats(playerId2, seasonType);
             }
             //Any position group not listed above is not supported for comparison
-            default -> throw new RuntimeException("Unsupported position group: " + positionGroup);
+            default -> throw new InvalidComparisonException("Unsupported position group: " + positionGroup);
         }
 
         return new CompareService.ComparisonResult(player1, player2, player1Stats, player2Stats, positionGroup);

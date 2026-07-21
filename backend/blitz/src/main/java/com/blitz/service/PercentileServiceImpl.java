@@ -7,6 +7,7 @@ import com.blitz.repository.CareerStatsRepository;
 import com.blitz.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.blitz.exception.ResourceNotFoundException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -48,7 +49,7 @@ public class PercentileServiceImpl implements PercentileService {
     //Recomputes the whole position group since percentile ranks are relative to all players
     public void computePercentilesForPlayer(UUID playerId) {
         playerRepository.findById(playerId)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
         //Percentiles are relative — changing one player's career stats shifts everyone's rank
         //so we must recompute the entire position group, not just the individual player
         computePercentilesForPositionGroup(

@@ -4,6 +4,7 @@ package com.blitz.service;
   import com.blitz.repository.PlayerRepository;
   import org.springframework.stereotype.Service;
   import org.springframework.transaction.annotation.Transactional;
+  import com.blitz.exception.ResourceNotFoundException;
 
   import java.util.List;
   import java.util.UUID;
@@ -26,14 +27,14 @@ public class PlayerServiceImpl implements PlayerService{
     //Function that takes in a UUID id number and uses it to return a player
     //Throws Runtime exception if not found
     public Player getPlayerById(UUID id){
-        return playerRepository.findById(id).orElseThrow(() -> new RuntimeException("Player not found with ID: " + id));
+        return playerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + id));
     }
 
     @Override
     //Function to get a player by NFLverseId
     //Throws Runtime exception if not found
     public Player getPlayerByNflverseId(String nflverseId){
-        return playerRepository.findByNflverseId(nflverseId).orElseThrow(() -> new RuntimeException("Player not found with ID: " + nflverseId));
+        return playerRepository.findByNflverseId(nflverseId).orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + nflverseId));
     }
 
     @Override 
