@@ -12,9 +12,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// loads only JPA layer — no full Spring context, much faster
+// loads only JPA layer =
 @DataJpaTest
-// use the real PostgreSQL database instead of an in-memory one
+// use the real PostgreSQL database=
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 public class PlayerRepositoryTest {
