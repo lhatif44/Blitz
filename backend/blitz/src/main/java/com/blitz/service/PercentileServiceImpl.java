@@ -8,7 +8,6 @@ import com.blitz.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.blitz.exception.ResourceNotFoundException;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 //Reads pre-computed career stats and ranks each player within their position group
-//Does not touch raw season stats — CareerStatsService handles that aggregation
 public class PercentileServiceImpl implements PercentileService {
 
     //CareerStatsRepository provides the pre-aggregated totals to rank
