@@ -46,6 +46,6 @@ backend/blitz/    Spring Boot API — entities, repositories, services, migratio
 
 ## Status
 
-The data model and service layer (player lookup, stats, career aggregation, percentile ranking, comparisons) are built and fully tested. Still to come: REST controllers, the ingestion pipeline that loads data from nflverse, and the React frontend.
+The data model, service layer, REST controllers, and nflverse ingestion pipeline (weekly scheduled job + on-demand endpoints) are built and tested. Still to come: the React frontend.
 
 For database schema, service internals, and data flow details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

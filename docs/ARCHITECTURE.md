@@ -12,6 +12,7 @@ src/main/java/com/blitz/
   model/entity/                  JPA entities — one class per database table
   repository/                    Spring Data repositories — one interface per entity
   service/                       Business logic — interfaces + implementations
+  controllers/                   Rest Controllers
 
 src/main/resources/
   application.properties         Database connection, JPA, Flyway config
@@ -20,6 +21,7 @@ src/main/resources/
 src/test/java/com/blitz/
   repository/                    Integration tests (@DataJpaTest)
   service/                       Unit tests (Mockito)
+  controllers                    HTTP tests
 ```
 
 ---
@@ -332,32 +334,65 @@ Examples:
 - Only 1 player qualifies → always 100th percentile
 - Tied players → both receive the same lower percentile (PERCENT_RANK behavior)
 
+### IngestionService
+Pulls CSV releases from `nflverse-data` on GitHub and loads them through the existing service layer. Deliberately not `@Transactional` at this level — each underlying save commits in its own transaction, so a full-history run that fails partway through keeps whatever it already ingested instead of rolling back everything.
+
+```
+ingestFullHistory()       → every season since 1999, all season types — expensive, for the initial load
+ingestCurrentSeason()     → refreshes teams, players, and the current (+ next, if started) season only
+```
+
+Both methods ingest teams → players → advanced PFR stats (2018+ only) → per-season stat rows, then call `CareerStatsService.computeAllCareerStats()` and `PercentileService.computeAllPercentiles()` to refresh derived data. Re-running ingestion upserts in place (matched by player/season/season-type) instead of inserting duplicates. Historical team abbreviations (`SD`, `STL`, `OAK`) are normalized to the relocated franchise's current abbreviation before lookup.
+
+`NflverseClient` does the actual HTTP + CSV parsing; `PositionGroupRouter` decides which stat table a row's position belongs to; one `*Mapper` per stat table converts a CSV row into an entity.
+
+---
+
+## Controller Layer
+
+One `@RestController` per resource, located in `controllers/`, all under `/api`. Controllers are thin — they parse request params and delegate directly to the matching service.
+
+| Controller | Base Path | Notes |
+|------------|-----------|-------|
+| PlayerController | /api/players | `GET` supports `name`, `positionGroup`, `active` query params (name search takes priority) |
+| TeamController | /api/teams | `GET` supports `conference`, `division` query params |
+| StatsController | /api/stats | One GET + POST pair per position group (`/passing`, `/rushing`, ... `/punting`), each GET takes an optional `seasonType` |
+| CompareController | /api/compare | `GET ?player1={id}&player2={id}&seasonType=` → `CompareService.comparePlayers()` |
+| CareerStatsController | /api/career-stats | Read + on-demand recompute (single player / position group / all) |
+| PercentileController | /api/percentiles | Read + on-demand recompute (single player / position group / all) |
+| IngestionController | /api/ingestion | `POST /full`, `POST /current` — manual trigger for either ingestion mode |
+
 ---
 
 ## Data Flow
 
-### Ingestion (weekly scheduled job — not built yet)
+### Ingestion (weekly scheduled job)
 ```
-nflverse CSV (GitHub)
-  └─→ Download + parse
-  └─→ StatsService.save*()            insert/update per-season rows
-  └─→ CareerStatsService              delete old career totals → recompute from raw rows
-  └─→ PercentileService               delete old percentiles  → rerank from career totals
+IngestionScheduler (@Scheduled, every Tuesday 06:00) or POST /api/ingestion/{full,current}
+  └─→ IngestionService.ingestFullHistory() / ingestCurrentSeason()
+        └─→ NflverseClient.download()          fetch + parse CSV from GitHub
+        └─→ *Mapper.map()                      CSV row → entity
+        └─→ StatsService.save*()               insert/update per-season rows (upsert by player/season/type)
+        └─→ CareerStatsService.computeAllCareerStats()    recompute from raw rows
+        └─→ PercentileService.computeAllPercentiles()     rerank from career totals
 ```
 
-### Player Profile Page request (controller not built yet)
+### Player Profile Page request
 ```
-GET /players/{id}/profile
+GET /api/players/{id}
   └─→ PlayerService.getPlayerById()          bio info
+GET /api/stats/{position}/{id}
   └─→ StatsService.get*(id, null)            all season rows (year-by-year table)
-  └─→ CareerStatsService.getCareerStats(id)  career totals display
-  └─→ PercentileService.getPercentiles(id)   percentile bars
+GET /api/career-stats/{id}
+  └─→ CareerStatsService.getCareerStatsForPlayer(id)  career totals display
+GET /api/percentiles/{id}
+  └─→ PercentileService.getPercentilesForPlayer(id)   percentile bars
 ```
 
-### Compare Page request (controller not built yet)
+### Compare Page request
 ```
-GET /compare?player1={id}&player2={id}&seasonType=REG
-  └─→ CompareService.comparePlayers()
+GET /api/compare?player1={id}&player2={id}&seasonType=REG
+  └─→ CompareController → CompareService.comparePlayers()
         ├─→ PlayerService (fetch both players)
         ├─→ validateSamePositionGroup() (throws if mismatch)
         └─→ StatsService.get*(id, "REG") (fetch both players' stats)
@@ -367,8 +402,6 @@ GET /compare?player1={id}&player2={id}&seasonType=REG
 
 ## Test Coverage
 
-79 tests, all passing.
-
 | Test Class | Type | What It Covers |
 |------------|------|---------------|
 | PlayerRepositoryTest | Integration (@DataJpaTest) | Real DB queries against H2 |
@@ -377,4 +410,7 @@ GET /compare?player1={id}&player2={id}&seasonType=REG
 | StatsServiceTest | Unit (Mockito) | REG/POST routing, null fallback (17 tests) |
 | CompareServiceTest | Unit (Mockito) | Position group enforcement, stat routing |
 | CareerStatsServiceTest | Unit (Mockito) | Every formula for every position (28 tests) |
+| PlayerControllerTest, TeamControllerTest, StatsControllerTest, CompareControllerTest, CareerStatsControllerTest, PercentileControllerTest | HTTP (@WebMvcTest) | Request routing/params → correct service call |
+| PositionGroupRouterTest, PassingStatsMapperTest, KickingStatsMapperTest | Unit | CSV row → entity mapping, position routing |
+| IngestionServiceImplTest | Unit (Mockito) | Full-history vs. current-season orchestration |
 | PercentileServiceTest | Unit (Mockito) | Rank formula: 2/3/4-player, ties, single player (12 tests) |
