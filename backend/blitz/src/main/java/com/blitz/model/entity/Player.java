@@ -1,5 +1,6 @@
 package com.blitz.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -7,6 +8,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+// ignores Hibernate's lazy-proxy internals when a Player reached via a lazy @ManyToOne
+// (CareerStats.player, PassingStats.player, ...) gets serialized without being fully loaded
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "players")
 @Getter

@@ -18,4 +18,8 @@ public interface ReceivingStatsRepository extends JpaRepository<ReceivingStats, 
 
     //Function to get a player's receiving stats for a specific season and season type e.g. REG or POST
     List<ReceivingStats> findByPlayerIdAndSeasonAndSeasonType(UUID playerId, Integer season, String seasonType);
+
+    //Function to get every receiving stat row for a season/season type in one query — used by ingestion to
+    //prefetch existing rows instead of querying once per CSV row
+    List<ReceivingStats> findBySeasonAndSeasonType(Integer season, String seasonType);
 }

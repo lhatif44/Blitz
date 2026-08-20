@@ -1,5 +1,6 @@
 package com.blitz.service;
 
+import com.blitz.exception.ResourceNotFoundException;
 import com.blitz.model.entity.Team;
 import com.blitz.repository.TeamRepository;
 import org.springframework.stereotype.Service;
@@ -22,10 +23,10 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     //Function to get a team by its abbreviation e.g. "KC" for Kansas City Chiefs
-    //Throws a RuntimeException if no team with that abbreviation exists in the database
+    //Throws a ResourceNotFoundException if no team with that abbreviation exists in the database
     public Team getTeamByAbbr(String abbr) {
         return teamRepository.findById(abbr)
-                .orElseThrow(() -> new RuntimeException("Team not found with abbreviation: " + abbr));
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with abbreviation: " + abbr));
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.blitz.model.entity.CareerStats;
 import com.blitz.repository.CareerPercentileRepository;
 import com.blitz.repository.CareerStatsRepository;
 import com.blitz.repository.PlayerRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.blitz.exception.ResourceNotFoundException;
@@ -26,14 +27,20 @@ public class PercentileServiceImpl implements PercentileService {
     private final CareerPercentileRepository careerPercentileRepository;
     private final PlayerRepository playerRepository;
 
+    // computeAllPercentiles() runs as one transaction across all 12 position groups — see the
+    // matching comment in CareerStatsServiceImpl for why this needs a periodic flush+clear
+    private final EntityManager entityManager;
+
     //Constructor injection for all repositories
     public PercentileServiceImpl(
             CareerStatsRepository careerStatsRepository,
             CareerPercentileRepository careerPercentileRepository,
-            PlayerRepository playerRepository) {
+            PlayerRepository playerRepository,
+            EntityManager entityManager) {
         this.careerStatsRepository = careerStatsRepository;
         this.careerPercentileRepository = careerPercentileRepository;
         this.playerRepository = playerRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -95,6 +102,10 @@ public class PercentileServiceImpl implements PercentileService {
                 careerPercentileRepository.save(cp);
             }
         }
+
+        // bound the persistence context before the next position group starts — see field comment
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Override

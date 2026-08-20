@@ -18,4 +18,8 @@ public interface PassRushStatsRepository extends JpaRepository<PassRushStats, UU
 
     //Function to get a player's pass rush stats for a specific season and season type e.g. REG or POST
     List<PassRushStats> findByPlayerIdAndSeasonAndSeasonType(UUID playerId, Integer season, String seasonType);
+
+    //Function to get every pass rush stat row for a season/season type in one query — used by ingestion to
+    //prefetch existing rows instead of querying once per CSV row
+    List<PassRushStats> findBySeasonAndSeasonType(Integer season, String seasonType);
 }

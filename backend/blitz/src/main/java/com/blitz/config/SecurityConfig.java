@@ -1,6 +1,7 @@
 package com.blitz.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.blitz.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,14 +27,15 @@ import java.util.List;
 public class SecurityConfig {
 
     private final ApiKeyAuthFilter apiKeyAuthFilter;
-    private final ObjectMapper objectMapper;
+
+
+    private static final ObjectMapper ERROR_OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Value("#{'${app.cors.allowed-origins:http://localhost:5173}'.split(',')}")
     private List<String> allowedOrigins;
 
-    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter, ObjectMapper objectMapper) {
+    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter) {
         this.apiKeyAuthFilter = apiKeyAuthFilter;
-        this.objectMapper = objectMapper;
     }
 
     @Bean
@@ -66,7 +68,7 @@ public class SecurityConfig {
     private void writeError(HttpServletResponse response, int status, String message) throws java.io.IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(
+        response.getWriter().write(ERROR_OBJECT_MAPPER.writeValueAsString(
                 new ErrorResponse(status, message, Instant.now())));
     }
 

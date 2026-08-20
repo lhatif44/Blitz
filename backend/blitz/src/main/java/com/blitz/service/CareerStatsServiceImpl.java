@@ -2,6 +2,7 @@ package com.blitz.service;
 
 import com.blitz.model.entity.*;
 import com.blitz.repository.*;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.blitz.exception.ResourceNotFoundException;
@@ -13,6 +14,13 @@ import java.util.*;
 @Service
 @Transactional
 public class CareerStatsServiceImpl implements CareerStatsService {
+
+    // computeAllCareerStats() runs as one transaction across all 12 position groups. Without
+    // ever clearing it, every player/stat entity read while computing each group stays tracked
+    // in the same persistence context, so later groups' auto-flushes (before each query) have to
+    // walk an ever-growing list of tracked entities — O(n^2) over the full run. Flushing and
+    // clearing after each position group keeps the persistence context bounded between groups.
+    private final EntityManager entityManager;
 
     //Repositories for raw per-season stats — one per position group's stat type
     private final CareerStatsRepository careerStatsRepository;
@@ -28,6 +36,7 @@ public class CareerStatsServiceImpl implements CareerStatsService {
 
     //Constructor injection for all repositories
     public CareerStatsServiceImpl(
+            EntityManager entityManager,
             CareerStatsRepository careerStatsRepository,
             PlayerRepository playerRepository,
             PassingStatsRepository passingStatsRepository,
@@ -38,6 +47,7 @@ public class CareerStatsServiceImpl implements CareerStatsService {
             SecondaryStatsRepository secondaryStatsRepository,
             KickingStatsRepository kickingStatsRepository,
             PuntingStatsRepository puntingStatsRepository) {
+        this.entityManager = entityManager;
         this.careerStatsRepository = careerStatsRepository;
         this.playerRepository = playerRepository;
         this.passingStatsRepository = passingStatsRepository;
@@ -87,6 +97,10 @@ public class CareerStatsServiceImpl implements CareerStatsService {
             case "P"                -> computePunterCareerStats(players);
             default -> throw new RuntimeException("Unsupported position group: " + positionGroup);
         }
+
+        // bound the persistence context before the next position group starts — see field comment
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Override

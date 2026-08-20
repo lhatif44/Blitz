@@ -1,6 +1,7 @@
 package com.blitz.controllers;
 
 import com.blitz.exception.GlobalExceptionHandler;
+import com.blitz.exception.ResourceNotFoundException;
 import com.blitz.model.entity.Team;
 import com.blitz.service.TeamService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -59,15 +59,13 @@ public class TeamControllerTest {
     }
 
     @Test
-    void getTeamByAbbr_throwsException_whenNotFound() {
-        // TeamServiceImpl throws a plain RuntimeException, which isn't mapped by
-        // GlobalExceptionHandler — with standalone MockMvc (no servlet container
-        // error-page handling) it propagates out of perform() rather than becoming
-        // a 500 response
-        when(teamService.getTeamByAbbr("XX")).thenThrow(new RuntimeException("Team not found with abbreviation: XX"));
+    void getTeamByAbbr_returns404_whenNotFound() throws Exception {
+        when(teamService.getTeamByAbbr("XX"))
+                .thenThrow(new ResourceNotFoundException("Team not found with abbreviation: XX"));
 
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/teams/{abbr}", "XX")))
-                .hasRootCauseMessage("Team not found with abbreviation: XX");
+        mockMvc.perform(get("/api/teams/{abbr}", "XX"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
